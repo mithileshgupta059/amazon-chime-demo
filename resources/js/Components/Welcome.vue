@@ -6,12 +6,19 @@ import {
     LogLevel,
     MeetingSessionConfiguration,
 } from "amazon-chime-sdk-js";
-import { onMounted, ref } from "vue";
+import { ref } from "vue";
+
+import useStartCall from "@/Hooks/useStartCall";
+import useToggleVideo from "@/Hooks/useToggleVideo";
+import useToggleAudio from "@/Hooks/useToggleAudio";
 
 window.global = window;
 
+const isCallStarted = ref(false);
+const isVideoStarted = ref(false);
+const isAudioStarted = ref(false);
+
 const videoTag = ref(null);
-const videoTagSecond = ref(null);
 const audioTag = ref(null);
 
 const { meeting_credentials } = defineProps({ meeting_credentials: {} });
@@ -30,111 +37,78 @@ const meetingSession = new DefaultMeetingSession(
     deviceController
 );
 
-async function meetingSetup() {
-    const observer = {
-        videoTileDidUpdate: (tileState) => {
-            console.error({ tileState });
-            const audioElement = audioTag;
-            const isDefaultVideo = tileState.tileId === 1;
-            // bind audio output to audio HTML DOM element using ref
-            meetingSession.audioVideo.bindAudioElement(audioElement.value);
-            meetingSession.audioVideo.bindVideoElement(
-                tileState.tileId,
-                isDefaultVideo ? videoTag.value : videoTagSecond.value
-            );
-        },
-        audioVideoDidStart: () => {
-            console.error("Started");
-        },
-        audioVideoDidStop: (sessionStatus) => {
-            console.error(
-                "Stopped with a session status code: ",
-                sessionStatus.statusCode()
-            );
-        },
-        audioVideoDidStartConnecting: (reconnecting) => {
-            if (reconnecting) {
-                console.error("Attempting to reconnect");
-            }
-        },
-    };
+const { startCall } = useStartCall(
+    meetingSession,
+    videoTag,
+    audioTag,
+    isCallStarted,
+    isVideoStarted,
+    isAudioStarted
+);
 
-    meetingSession.audioVideo
-        .listAudioInputDevices()
-        .then((audioInputDevices) => {
-            return meetingSession.audioVideo.startAudioInput(
-                audioInputDevices[0].deviceId
-            );
-        })
-        .then(() => {
-            return meetingSession.audioVideo.listAudioOutputDevices();
-        })
-        .then(() => {
-            const audioElement = audioTag;
-            // bind audio output to audio HTML DOM element using ref
-            return meetingSession.audioVideo.bindAudioElement(
-                audioElement.value
-            );
-        })
-        .then(() => {
-            // register audio-video lifecycle observer
-            meetingSession.audioVideo.addObserver(observer);
-            return meetingSession.audioVideo.start();
-        })
-        .then(() => {
-            meetingSession.audioVideo
-                .listVideoInputDevices()
-                .then((videoInputDevices) => {
-                    return meetingSession.audioVideo.startVideoInput(
-                        videoInputDevices.length
-                            ? videoInputDevices[0].deviceId
-                            : null
-                    );
-                })
-                .then(() => {
-                    return meetingSession.audioVideo.startLocalVideoTile();
-                });
-        })
-        .then(() => {
-            // Unmute
-            const unmuted =
-                meetingSession.audioVideo.realtimeUnmuteLocalAudio();
-            if (unmuted) {
-                console.log("Other attendees can hear your audio");
-            } else {
-                // See the realtimeSetCanUnmuteLocalAudio use case below.
-                console.log("You cannot unmute yourself");
-            }
-            const muted = meetingSession.audioVideo.realtimeIsLocalAudioMuted();
-            if (muted) {
-                console.log("You are muted");
-            } else {
-                console.log("Other attendees can hear your audio");
-            }
-        })
-        .catch((err) => {
-            console.error("error", err);
-        });
-}
-
-const startCall = () => {
-    meetingSetup();
-};
+const { toggleVideo } = useToggleVideo(meetingSession, isVideoStarted);
+const { toggleAudio } = useToggleAudio(meetingSession, isAudioStarted);
 </script>
 
 <template>
     <div>
         <div class="p-6 sm:px-20 bg-white border-b border-gray-200">
-            <button
-                class="bg-blue-500 text-white p-2 rounded"
-                @click="startCall"
+            <div
+                class="h-96 w-72 bg-gray-200 flex justify-center items-center rounded"
             >
-                Start call
-            </button>
-
-            <audio ref="audioTag"></audio>
-            <video ref="videoTag"></video>
-            <video ref="videoTagSecond"></video>
+                <button
+                    v-if="!isCallStarted"
+                    @click="startCall"
+                    class="bg-white px-4 py-1 rounded"
+                >
+                    <i class="fa-solid fa-phone mr-2 text-md"></i>
+                    <span class="text-md">Start</span>
+                </button>
+                <i
+                    v-if="!isVideoStarted && isCallStarted"
+                    class="fa-solid fa-user-slash text-2xl"
+                ></i>
+                <video
+                    v-if="isCallStarted && isVideoStarted"
+                    ref="videoTag"
+                ></video>
+                <audio
+                    v-if="isCallStarted && isAudioStarted"
+                    ref="audioTag"
+                ></audio>
+            </div>
+            <div class="bg-gray-200 w-72 h-20 mt-4 rounded flex justify-evenly">
+                <button @click="toggleAudio">
+                    <i
+                        v-if="isAudioStarted"
+                        class="fa-solid fa-microphone text-2xl bg-white px-4 py-2 rounded"
+                    ></i>
+                    <i
+                        v-else
+                        class="fa-solid fa-microphone-slash text-2xl bg-white px-4 py-2 rounded"
+                    ></i>
+                </button>
+                <button @click="toggleVideo">
+                    <i
+                        v-if="isVideoStarted"
+                        class="fa-solid fa-video text-2xl bg-white px-4 py-2 rounded"
+                    ></i>
+                    <i
+                        v-else
+                        class="fa-solid fa-video-slash text-2xl bg-white px-4 py-2 rounded"
+                    ></i>
+                </button>
+                <button>
+                    <i
+                        class="fa-solid fa-message text-2xl bg-white px-4 py-2 rounded"
+                    ></i>
+                </button>
+                <button>
+                    <i
+                        class="fa-solid fa-laptop text-2xl bg-white px-4 py-2 rounded"
+                    ></i>
+                </button>
+            </div>
         </div>
     </div>
 </template>
