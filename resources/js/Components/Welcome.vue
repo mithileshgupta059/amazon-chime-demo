@@ -5,9 +5,8 @@ import {
     DefaultMeetingSession,
     LogLevel,
     MeetingSessionConfiguration,
-    MeetingSessionStatusCode,
 } from "amazon-chime-sdk-js";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import useStartCall from "@/Hooks/useStartCall";
 import useToggleVideo from "@/Hooks/useToggleVideo";
@@ -21,6 +20,13 @@ window.global = window;
 const isCallStarted = ref(false);
 const isVideoStarted = ref(false);
 const isAudioStarted = ref(false);
+const isSettingsVisible = ref(false);
+
+// State of audio, video <Input, output>
+
+const audioInputDevices = ref([]);
+const videoInputDevices = ref([]);
+const audioOutputDevices = ref([]);
 
 // Keep track of currently selected devices
 
@@ -44,6 +50,22 @@ const meetingSession = new DefaultMeetingSession(
     deviceController
 );
 
+// Set audio, video devices in state
+
+meetingSession.audioVideo.listAudioInputDevices().then((res) => {
+    audioInputDevices.value = res;
+});
+
+meetingSession.audioVideo.listVideoInputDevices().then((res) => {
+    videoInputDevices.value = res;
+});
+
+meetingSession.audioVideo.listAudioOutputDevices().then((res) => {
+    audioOutputDevices.value = res;
+});
+
+// Hooks
+
 const { startCall } = useStartCall(
     meetingSession,
     videoTag,
@@ -62,11 +84,53 @@ const { toggleVideo } = useToggleVideo(
 
 const { toggleAudio } = useToggleAudio(meetingSession, isAudioStarted);
 const { stopCall } = useStopCall(meetingSession, isCallStarted);
+
+// Toggle settings
+
+const toggleSettings = () => {
+    isSettingsVisible.value == true
+        ? (isSettingsVisible.value = false)
+        : (isSettingsVisible.value = true);
+};
 </script>
 
 <template>
     <div>
         <div class="p-6 sm:px-20 bg-white border-b border-gray-200">
+            <div
+                class="h-16 w-72 bg-gray-200 mb-2 flex justify-end items-center rounded p-2"
+            >
+                <i
+                    @click="toggleSettings"
+                    class="fa-solid fa-gear text-2xl bg-white px-4 py-2 rounded cursor-pointer"
+                ></i>
+            </div>
+            <div
+                v-if="isSettingsVisible"
+                class="w-72 bg-gray-200 mb-2 rounded p-4"
+            >
+                <p>Camera</p>
+                <select class="w-full rounded my-2">
+                    <option
+                        v-if="videoInputDevices.length > 0"
+                        v-for="videoInputDevice in videoInputDevices"
+                    >
+                        {{ videoInputDevice.label }}
+                    </option>
+                </select>
+                <p class="mb-2">Microphone</p>
+                <select class="w-full rounded my-2">
+                    <option
+                        v-if="audioInputDevices.length > 0"
+                        v-for="audioInputDevice in audioInputDevices"
+                    >
+                        {{ audioInputDevice.label }}
+                    </option>
+                </select>
+                <button class="w-full bg-blue-500 rounded text-white py-2 mt-2">
+                    Save
+                </button>
+            </div>
             <div
                 class="h-96 w-72 bg-gray-200 flex justify-center items-center rounded"
             >
