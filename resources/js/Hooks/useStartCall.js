@@ -1,17 +1,18 @@
 const useStartCall = (
     meetingSession,
     videoTag,
+    videoTagSecond,
     audioTag,
     isCallStarted,
-    isVideoStarted,
-    isAudioStarted
+    isAudioStarted,
+    isVideoStarted
 ) => {
-    const startCall = () => {
+    const startCall = async () => {
         const observer = {
             videoTileDidUpdate: (tileState) => {
                 console.error({ tileState });
                 const audioElement = audioTag;
-                const isDefaultVideo = tileState.tileId === 1;
+                const isDefaultVideo = tileState.localTile;
                 // bind audio output to audio HTML DOM element using ref
                 meetingSession.audioVideo.bindAudioElement(audioElement.value);
                 meetingSession.audioVideo.bindVideoElement(
@@ -35,52 +36,33 @@ const useStartCall = (
             },
         };
 
-        meetingSession.audioVideo
-            .listAudioInputDevices()
-            .then((audioInputDevices) => {
-                isCallStarted.value = true;
+        isCallStarted.value = true;
 
-                return meetingSession.audioVideo.startAudioInput(
-                    audioInputDevices[0].deviceId
-                );
-            })
-            .then(() => {
-                isAudioStarted.value = true;
+        const audioInputDevices =
+            await meetingSession.audioVideo.listAudioInputDevices();
 
-                return meetingSession.audioVideo.listAudioOutputDevices();
-            })
-            .then(() => {
-                const audioElement = audioTag;
+        await meetingSession.audioVideo.startAudioInput(
+            audioInputDevices[0].deviceId
+        );
 
-                // bind audio output to audio HTML DOM element using ref
-                return meetingSession.audioVideo.bindAudioElement(
-                    audioElement.value
-                );
-            })
-            .then(() => {
-                // register audio-video lifecycle observer
-                meetingSession.audioVideo.addObserver(observer);
-                return meetingSession.audioVideo.start();
-            })
-            .then(() => {
-                isVideoStarted.value = true;
+        isAudioStarted.value = true;
 
-                meetingSession.audioVideo
-                    .listVideoInputDevices()
-                    .then((videoInputDevices) => {
-                        return meetingSession.audioVideo.startVideoInput(
-                            videoInputDevices.length
-                                ? videoInputDevices[0].deviceId
-                                : null
-                        );
-                    })
-                    .then(() => {
-                        return meetingSession.audioVideo.startLocalVideoTile();
-                    });
-            })
-            .catch((err) => {
-                console.error("error", err);
-            });
+        await meetingSession.audioVideo.bindAudioElement(audioTag.value);
+
+        meetingSession.audioVideo.addObserver(observer);
+
+        meetingSession.audioVideo.start();
+
+        const videoInputDevices =
+            await meetingSession.audioVideo.listVideoInputDevices();
+
+        await meetingSession.audioVideo.startVideoInput(
+            videoInputDevices[0].deviceId
+        );
+
+        isVideoStarted.value = true;
+
+        meetingSession.audioVideo.startLocalVideoTile();
     };
 
     return {

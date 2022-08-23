@@ -1,14 +1,14 @@
 const useToggleVideo = (meetingSession, isVideoStarted) => {
     const toggleVideo = async () => {
         if (isVideoStarted.value == true) {
-            isVideoStarted.value = false;
-
             await meetingSession.audioVideo.stopVideoInput();
+
+            meetingSession.audioVideo.stopLocalVideoTile();
+
+            isVideoStarted.value = false;
 
             return;
         }
-
-        isVideoStarted.value = true;
 
         const videoInputDevices =
             await meetingSession.audioVideo.listVideoInputDevices();
@@ -18,6 +18,8 @@ const useToggleVideo = (meetingSession, isVideoStarted) => {
         );
 
         meetingSession.audioVideo.startLocalVideoTile();
+
+        isVideoStarted.value = true;
     };
 
     return {

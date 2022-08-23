@@ -5,20 +5,27 @@ import {
     DefaultMeetingSession,
     LogLevel,
     MeetingSessionConfiguration,
+    MeetingSessionStatusCode,
 } from "amazon-chime-sdk-js";
 import { ref } from "vue";
 
 import useStartCall from "@/Hooks/useStartCall";
 import useToggleVideo from "@/Hooks/useToggleVideo";
 import useToggleAudio from "@/Hooks/useToggleAudio";
+import useStopCall from "@/Hooks/useStopCall";
 
 window.global = window;
+
+// Check if audio, video or call started <State>
 
 const isCallStarted = ref(false);
 const isVideoStarted = ref(false);
 const isAudioStarted = ref(false);
 
+// Keep track of currently selected devices
+
 const videoTag = ref(null);
+const videoTagSecond = ref(null);
 const audioTag = ref(null);
 
 const { meeting_credentials } = defineProps({ meeting_credentials: {} });
@@ -40,14 +47,21 @@ const meetingSession = new DefaultMeetingSession(
 const { startCall } = useStartCall(
     meetingSession,
     videoTag,
+    videoTagSecond,
     audioTag,
     isCallStarted,
-    isVideoStarted,
-    isAudioStarted
+    isAudioStarted,
+    isVideoStarted
 );
 
-const { toggleVideo } = useToggleVideo(meetingSession, isVideoStarted);
+const { toggleVideo } = useToggleVideo(
+    meetingSession,
+    isVideoStarted,
+    videoTag
+);
+
 const { toggleAudio } = useToggleAudio(meetingSession, isAudioStarted);
+const { stopCall } = useStopCall(meetingSession, isCallStarted);
 </script>
 
 <template>
@@ -56,26 +70,31 @@ const { toggleAudio } = useToggleAudio(meetingSession, isAudioStarted);
             <div
                 class="h-96 w-72 bg-gray-200 flex justify-center items-center rounded"
             >
+                <video ref="videoTag"></video>
+
+                <video ref="videoTagSecond"></video>
+
+                <audio ref="audioTag"></audio>
+            </div>
+            <div
+                class="bg-gray-200 w-72 h-20 mt-4 rounded flex justify-evenly py-4"
+            >
                 <button
                     v-if="!isCallStarted"
                     @click="startCall"
                     class="bg-white px-4 py-1 rounded"
                 >
-                    <i class="fa-solid fa-phone mr-2 text-md"></i>
+                    <i class="fa-solid fa-phone text-md mr-4"></i>
                     <span class="text-md">Start</span>
                 </button>
-                <i
-                    v-if="!isVideoStarted && isCallStarted"
-                    class="fa-solid fa-user-slash text-2xl"
-                ></i>
-                <video
-                    v-if="isCallStarted && isVideoStarted"
-                    ref="videoTag"
-                ></video>
-                <audio
-                    v-if="isCallStarted && isAudioStarted"
-                    ref="audioTag"
-                ></audio>
+                <button
+                    v-if="isCallStarted"
+                    @click="stopCall"
+                    class="bg-white px-4 py-1 rounded"
+                >
+                    <i class="fa-solid fa-phone-slash text-md mr-4"></i>
+                    <span class="text-md">Stop</span>
+                </button>
             </div>
             <div class="bg-gray-200 w-72 h-20 mt-4 rounded flex justify-evenly">
                 <button @click="toggleAudio">
