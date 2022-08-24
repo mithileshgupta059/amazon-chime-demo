@@ -5,13 +5,17 @@ import {
     DefaultMeetingSession,
     LogLevel,
     MeetingSessionConfiguration,
+    DefaultModality,
+    DefaultVideoTile,
 } from "amazon-chime-sdk-js";
-import { computed, ref } from "vue";
+import { reactive, ref } from "vue";
 
 import useStartCall from "@/Hooks/useStartCall";
 import useToggleVideo from "@/Hooks/useToggleVideo";
 import useToggleAudio from "@/Hooks/useToggleAudio";
 import useStopCall from "@/Hooks/useStopCall";
+import useChangeDevices from "@/Hooks/useChangeDevices";
+import useContentShare from "@/Hooks/useContentShare";
 
 window.global = window;
 
@@ -21,18 +25,31 @@ const isCallStarted = ref(false);
 const isVideoStarted = ref(false);
 const isAudioStarted = ref(false);
 const isSettingsVisible = ref(false);
+const isContentSharing = ref(false);
 
 // State of audio, video <Input, output>
 
 const audioInputDevices = ref([]);
 const videoInputDevices = ref([]);
-const audioOutputDevices = ref([]);
+
+// Selected devices
+
+const selectedAudioInputDevice = ref(null);
+const selectedVideoInputDevice = ref(null);
 
 // Keep track of currently selected devices
 
 const videoTag = ref(null);
 const videoTagSecond = ref(null);
+const contentShare = ref(null);
 const audioTag = ref(null);
+
+// Form data
+
+const fd = reactive({
+    videoInputDevice: null,
+    audioInputDevice: null,
+});
 
 const { meeting_credentials } = defineProps({ meeting_credentials: {} });
 
@@ -53,15 +70,19 @@ const meetingSession = new DefaultMeetingSession(
 // Set audio, video devices in state
 
 meetingSession.audioVideo.listAudioInputDevices().then((res) => {
-    audioInputDevices.value = res;
+    if (res.length > 0) {
+        audioInputDevices.value = res;
+        selectedAudioInputDevice.value = res[0];
+        fd.audioInputDevice = res[0];
+    }
 });
 
 meetingSession.audioVideo.listVideoInputDevices().then((res) => {
-    videoInputDevices.value = res;
-});
-
-meetingSession.audioVideo.listAudioOutputDevices().then((res) => {
-    audioOutputDevices.value = res;
+    if (res.length > 0) {
+        videoInputDevices.value = res;
+        selectedVideoInputDevice.value = res[0];
+        fd.videoInputDevice = res[0];
+    }
 });
 
 // Hooks
@@ -84,6 +105,15 @@ const { toggleVideo } = useToggleVideo(
 
 const { toggleAudio } = useToggleAudio(meetingSession, isAudioStarted);
 const { stopCall } = useStopCall(meetingSession, isCallStarted);
+const { changeDevices } = useChangeDevices(
+    selectedAudioInputDevice,
+    selectedVideoInputDevice
+);
+const { startContentShare, stopContentShare } = useContentShare(
+    meetingSession,
+    DefaultModality,
+    isContentSharing
+);
 
 // Toggle settings
 
@@ -110,8 +140,12 @@ const toggleSettings = () => {
                 class="w-72 bg-gray-200 mb-2 rounded p-4"
             >
                 <p>Camera</p>
-                <select class="w-full rounded my-2">
+                <select
+                    v-model="fd.videoInputDevice"
+                    class="w-full rounded my-2"
+                >
                     <option
+                        :value="videoInputDevice"
                         v-if="videoInputDevices.length > 0"
                         v-for="videoInputDevice in videoInputDevices"
                     >
@@ -119,15 +153,26 @@ const toggleSettings = () => {
                     </option>
                 </select>
                 <p class="mb-2">Microphone</p>
-                <select class="w-full rounded my-2">
+                <select
+                    v-model="fd.audioInputDevice"
+                    class="w-full rounded my-2"
+                >
                     <option
+                        :value="audioInputDevice"
                         v-if="audioInputDevices.length > 0"
                         v-for="audioInputDevice in audioInputDevices"
                     >
                         {{ audioInputDevice.label }}
                     </option>
                 </select>
-                <button class="w-full bg-blue-500 rounded text-white py-2 mt-2">
+                <button
+                    @click="
+                        () => {
+                            changeDevices(fd);
+                        }
+                    "
+                    class="w-full bg-blue-500 rounded text-white py-2 mt-2"
+                >
                     Save
                 </button>
             </div>
@@ -186,12 +231,18 @@ const toggleSettings = () => {
                         class="fa-solid fa-message text-2xl bg-white px-4 py-2 rounded"
                     ></i>
                 </button>
-                <button>
+                <button v-if="!isContentSharing" @click="startContentShare">
                     <i
                         class="fa-solid fa-laptop text-2xl bg-white px-4 py-2 rounded"
                     ></i>
                 </button>
+                <button v-else @click="stopContentShare">
+                    <i
+                        class="fa-solid fa-laptop-slash text-2xl bg-white px-4 py-2 rounded"
+                    ></i>
+                </button>
             </div>
         </div>
+        <video ref="contentShare"></video>
     </div>
 </template>

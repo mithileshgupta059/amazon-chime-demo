@@ -10,15 +10,21 @@ const useStartCall = (
     const startCall = async () => {
         const observer = {
             videoTileDidUpdate: (tileState) => {
-                console.error({ tileState });
-                const audioElement = audioTag;
-                const isDefaultVideo = tileState.localTile;
-                // bind audio output to audio HTML DOM element using ref
-                meetingSession.audioVideo.bindAudioElement(audioElement.value);
-                meetingSession.audioVideo.bindVideoElement(
-                    tileState.tileId,
-                    isDefaultVideo ? videoTag.value : videoTagSecond.value
-                );
+                console.error(tileState);
+
+                if (tileState.localTile && !tileState.isContent) {
+                    meetingSession.audioVideo.bindVideoElement(
+                        tileState.tileId,
+                        videoTag.value
+                    );
+                    return;
+                }
+                if (!tileState.isContent && !tileState.localTile) {
+                    meetingSession.audioVideo.bindVideoElement(
+                        tileState.tileId,
+                        videoTagSecond.value
+                    );
+                }
             },
             audioVideoDidStart: () => {
                 console.error("Started");
