@@ -2,8 +2,6 @@ const useContentShare = (meetingSession, DefaultModality, isContentSharing) => {
     const startContentShare = async () => {
         const observer = {
             videoTileDidUpdate: (tileState) => {
-                console.error(tileState);
-
                 // Ignore a tile without attendee ID and videos.
                 if (!tileState.boundAttendeeId || !tileState.isContent) {
                     return;
@@ -39,9 +37,7 @@ const useContentShare = (meetingSession, DefaultModality, isContentSharing) => {
 
         // A browser will prompt the user to choose the screen.
 
-        const mediaStream = await navigator.mediaDevices.getDisplayMedia();
-
-        await meetingSession.audioVideo.startContentShare(mediaStream);
+        await meetingSession.audioVideo.startContentShareFromScreenCapture();
 
         isContentSharing.value = true;
     };
@@ -56,6 +52,9 @@ const useContentShare = (meetingSession, DefaultModality, isContentSharing) => {
         meetingSession.audioVideo.addContentShareObserver(observer);
 
         await meetingSession.audioVideo.stopContentShare();
+
+        meetingSession.audioVideo.stopLocalVideoTile();
+        meetingSession.audioVideo.startLocalVideoTile();
 
         isContentSharing.value = false;
     };

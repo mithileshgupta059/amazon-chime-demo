@@ -7,6 +7,7 @@ import {
     MeetingSessionConfiguration,
     DefaultModality,
     DefaultVideoTile,
+    Attendee,
 } from "amazon-chime-sdk-js";
 import { reactive, ref } from "vue";
 
@@ -94,20 +95,24 @@ const { startCall } = useStartCall(
     audioTag,
     isCallStarted,
     isAudioStarted,
-    isVideoStarted
+    isVideoStarted,
+    selectedAudioInputDevice,
+    selectedVideoInputDevice
 );
 
 const { toggleVideo } = useToggleVideo(
     meetingSession,
     isVideoStarted,
-    videoTag
+    videoTag,
+    selectedVideoInputDevice
 );
 
 const { toggleAudio } = useToggleAudio(meetingSession, isAudioStarted);
 const { stopCall } = useStopCall(meetingSession, isCallStarted);
 const { changeDevices } = useChangeDevices(
     selectedAudioInputDevice,
-    selectedVideoInputDevice
+    selectedVideoInputDevice,
+    isSettingsVisible
 );
 const { startContentShare, stopContentShare } = useContentShare(
     meetingSession,
@@ -128,6 +133,7 @@ const toggleSettings = () => {
     <div>
         <div class="p-6 sm:px-20 bg-white border-b border-gray-200">
             <div
+                v-if="!isCallStarted"
                 class="h-16 w-72 bg-gray-200 mb-2 flex justify-end items-center rounded p-2"
             >
                 <i
@@ -136,7 +142,7 @@ const toggleSettings = () => {
                 ></i>
             </div>
             <div
-                v-if="isSettingsVisible"
+                v-if="isSettingsVisible && !isCallStarted"
                 class="w-72 bg-gray-200 mb-2 rounded p-4"
             >
                 <p>Camera</p>
@@ -175,6 +181,12 @@ const toggleSettings = () => {
                 >
                     Save
                 </button>
+            </div>
+            <div
+                v-if="!meetingSession.audioVideo.hasStartedLocalVideoTile()"
+                class="w-72 bg-gray-200 mb-2 rounded p-4"
+            >
+                <p>Local video stopped</p>
             </div>
             <div
                 class="h-96 w-72 bg-gray-200 flex justify-center items-center rounded"
@@ -231,12 +243,18 @@ const toggleSettings = () => {
                         class="fa-solid fa-message text-2xl bg-white px-4 py-2 rounded"
                     ></i>
                 </button>
-                <button v-if="!isContentSharing" @click="startContentShare">
+                <button
+                    v-if="!isContentSharing && isCallStarted"
+                    @click="startContentShare"
+                >
                     <i
                         class="fa-solid fa-laptop text-2xl bg-white px-4 py-2 rounded"
                     ></i>
                 </button>
-                <button v-else @click="stopContentShare">
+                <button
+                    v-if="isContentSharing && isCallStarted"
+                    @click="stopContentShare"
+                >
                     <i
                         class="fa-solid fa-laptop-slash text-2xl bg-white px-4 py-2 rounded"
                     ></i>

@@ -5,21 +5,25 @@ const useStartCall = (
     audioTag,
     isCallStarted,
     isAudioStarted,
-    isVideoStarted
+    isVideoStarted,
+    selectedAudioInputDevice,
+    selectedVideoInputDevice
 ) => {
     const startCall = async () => {
         const observer = {
             videoTileDidUpdate: (tileState) => {
-                console.error(tileState);
+                if (tileState.isContent) {
+                    return;
+                }
 
-                if (tileState.localTile && !tileState.isContent) {
+                if (tileState.localTile) {
                     meetingSession.audioVideo.bindVideoElement(
                         tileState.tileId,
                         videoTag.value
                     );
                     return;
                 }
-                if (!tileState.isContent && !tileState.localTile) {
+                if (!tileState.localTile) {
                     meetingSession.audioVideo.bindVideoElement(
                         tileState.tileId,
                         videoTagSecond.value
@@ -44,11 +48,8 @@ const useStartCall = (
 
         isCallStarted.value = true;
 
-        const audioInputDevices =
-            await meetingSession.audioVideo.listAudioInputDevices();
-
         await meetingSession.audioVideo.startAudioInput(
-            audioInputDevices[0].deviceId
+            selectedAudioInputDevice.value.deviceId
         );
 
         isAudioStarted.value = true;
@@ -59,11 +60,8 @@ const useStartCall = (
 
         meetingSession.audioVideo.start();
 
-        const videoInputDevices =
-            await meetingSession.audioVideo.listVideoInputDevices();
-
         await meetingSession.audioVideo.startVideoInput(
-            videoInputDevices[0].deviceId
+            selectedVideoInputDevice.value.deviceId
         );
 
         isVideoStarted.value = true;

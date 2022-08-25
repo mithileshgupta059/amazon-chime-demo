@@ -1,20 +1,26 @@
-const useToggleVideo = (meetingSession, isVideoStarted) => {
+const useToggleVideo = (
+    meetingSession,
+    isVideoStarted,
+    videoTag,
+    selectedVideoInputDevice
+) => {
     const toggleVideo = async () => {
         if (isVideoStarted.value == true) {
-            await meetingSession.audioVideo.stopVideoInput();
-
             meetingSession.audioVideo.stopLocalVideoTile();
+
+            // Stop video input. If the previously chosen camera has an LED light on,
+            // it will turn off indicating the camera is no longer capturing.
+            await meetingSession.audioVideo.stopVideoInput();
 
             isVideoStarted.value = false;
 
             return;
         }
 
-        const videoInputDevices =
-            await meetingSession.audioVideo.listVideoInputDevices();
-
+        // The camera LED light will turn on indicating that it is now capturing.
+        // See the "Device" section for details.
         await meetingSession.audioVideo.startVideoInput(
-            videoInputDevices[0].deviceId
+            selectedVideoInputDevice.value.deviceId
         );
 
         meetingSession.audioVideo.startLocalVideoTile();
