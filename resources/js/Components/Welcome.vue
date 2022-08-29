@@ -6,8 +6,7 @@ import {
     LogLevel,
     MeetingSessionConfiguration,
     DefaultModality,
-    DefaultVideoTile,
-    Attendee,
+    DataMessage,
 } from "amazon-chime-sdk-js";
 import { reactive, ref } from "vue";
 
@@ -17,6 +16,7 @@ import useToggleAudio from "@/Hooks/useToggleAudio";
 import useStopCall from "@/Hooks/useStopCall";
 import useChangeDevices from "@/Hooks/useChangeDevices";
 import useContentShare from "@/Hooks/useContentShare";
+import useMessaging from "@/Hooks/useMessaging";
 
 window.global = window;
 
@@ -42,7 +42,6 @@ const selectedVideoInputDevice = ref(null);
 
 const videoTag = ref(null);
 const videoTagSecond = ref(null);
-const contentShare = ref(null);
 const audioTag = ref(null);
 
 // Form data
@@ -52,7 +51,9 @@ const fd = reactive({
     audioInputDevice: null,
 });
 
-const { meeting_credentials } = defineProps({ meeting_credentials: {} });
+const { meeting_credentials } = defineProps({
+    meeting_credentials: {},
+});
 
 const logger = new ConsoleLogger("MeetingLogs", LogLevel.INFO);
 const deviceController = new DefaultDeviceController(logger);
@@ -117,8 +118,10 @@ const { changeDevices } = useChangeDevices(
 const { startContentShare, stopContentShare } = useContentShare(
     meetingSession,
     DefaultModality,
-    isContentSharing
+    isContentSharing,
+    videoTagSecond
 );
+const { sendMessage } = useMessaging(meetingSession, DataMessage);
 
 // Toggle settings
 
@@ -238,7 +241,7 @@ const toggleSettings = () => {
                         class="fa-solid fa-video-slash text-2xl bg-white px-4 py-2 rounded"
                     ></i>
                 </button>
-                <button>
+                <button @click="sendMessage">
                     <i
                         class="fa-solid fa-message text-2xl bg-white px-4 py-2 rounded"
                     ></i>
@@ -261,6 +264,5 @@ const toggleSettings = () => {
                 </button>
             </div>
         </div>
-        <video ref="contentShare"></video>
     </div>
 </template>

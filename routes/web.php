@@ -42,7 +42,7 @@ Route::middleware([
 
         // Create an SDK class used to share configuration across clients.
         $sdk = new Aws\Sdk($sharedConfig);
-        // Create an Amazon S3 client using the shared configuration data.
+        // Create an Amazon amazon client using the shared configuration data.
         $client = $sdk->createChime();
 
         $meeting_response = $client->createMeeting([
@@ -61,7 +61,7 @@ Route::middleware([
             'meeting_credentials' => [
                 'meeting_response' => $meeting_response['Meeting'],
                 'attendee_response' => $attendee_response['Attendee']
-            ]
+            ],
         ]);
     })->name('dashboard');
 });

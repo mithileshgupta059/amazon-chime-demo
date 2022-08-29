@@ -1,4 +1,9 @@
-const useContentShare = (meetingSession, DefaultModality, isContentSharing) => {
+const useContentShare = (
+    meetingSession,
+    DefaultModality,
+    isContentSharing,
+    videoTagSecond
+) => {
     const startContentShare = async () => {
         const observer = {
             videoTileDidUpdate: (tileState) => {
@@ -55,6 +60,16 @@ const useContentShare = (meetingSession, DefaultModality, isContentSharing) => {
 
         meetingSession.audioVideo.stopLocalVideoTile();
         meetingSession.audioVideo.startLocalVideoTile();
+
+        const remoteVideoTiles =
+            meetingSession.audioVideo.getAllRemoteVideoTiles();
+
+        if (remoteVideoTiles.length > 0) {
+            meetingSession.audioVideo.bindVideoElement(
+                remoteVideoTiles[0].tileState.tileId,
+                videoTagSecond.value
+            );
+        }
 
         isContentSharing.value = false;
     };
