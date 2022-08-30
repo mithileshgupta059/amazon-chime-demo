@@ -8,7 +8,7 @@ import {
     DefaultModality,
     DataMessage,
 } from "amazon-chime-sdk-js";
-import { reactive, ref, watch } from "vue";
+import { reactive, ref } from "vue";
 
 import useStartCall from "@/Hooks/useStartCall";
 import useToggleVideo from "@/Hooks/useToggleVideo";
