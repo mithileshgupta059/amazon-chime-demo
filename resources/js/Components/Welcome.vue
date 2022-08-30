@@ -8,7 +8,7 @@ import {
     DefaultModality,
     DataMessage,
 } from "amazon-chime-sdk-js";
-import { reactive, ref } from "vue";
+import { reactive, ref, watch } from "vue";
 
 import useStartCall from "@/Hooks/useStartCall";
 import useToggleVideo from "@/Hooks/useToggleVideo";
@@ -50,6 +50,13 @@ const fd = reactive({
     videoInputDevice: null,
     audioInputDevice: null,
 });
+
+// Internal message state
+
+const messageInputValue = ref("");
+const messages = ref([]);
+
+// Props and other jazz
 
 const { meeting_credentials } = defineProps({
     meeting_credentials: {},
@@ -121,7 +128,7 @@ const { startContentShare, stopContentShare } = useContentShare(
     isContentSharing,
     videoTagSecond
 );
-const { sendMessage } = useMessaging(meetingSession, DataMessage);
+const { sendMessage } = useMessaging(meetingSession, DataMessage, messages);
 
 // Toggle settings
 
@@ -220,7 +227,10 @@ const toggleSettings = () => {
                     <span class="text-md">Stop</span>
                 </button>
             </div>
-            <div class="bg-gray-200 w-72 h-20 mt-4 rounded flex justify-evenly">
+            <div
+                v-if="isCallStarted"
+                class="bg-gray-200 w-72 h-20 mt-4 rounded flex justify-evenly"
+            >
                 <button @click="toggleAudio">
                     <i
                         v-if="isAudioStarted"
@@ -262,6 +272,31 @@ const toggleSettings = () => {
                         class="fa-solid fa-laptop-slash text-2xl bg-white px-4 py-2 rounded"
                     ></i>
                 </button>
+            </div>
+            <div v-if="isCallStarted" class="bg-gray-200 w-72 mt-4 rounded p-4">
+                <input
+                    v-model="messageInputValue"
+                    type="text"
+                    class="rounded"
+                />
+                <button
+                    @click="
+                        () => {
+                            sendMessage(messageInputValue);
+                        }
+                    "
+                    class="bg-blue-500 rounded text-white px-4 py-2 mt-2"
+                >
+                    Add
+                </button>
+            </div>
+            <div class="bg-gray-200 w-72 mt-4 rounded p-4">
+                <div v-for="message in messages">
+                    <p>{{ message.senderAttendeeId }}</p>
+                    <p>
+                        {{ message.message }}
+                    </p>
+                </div>
             </div>
         </div>
     </div>

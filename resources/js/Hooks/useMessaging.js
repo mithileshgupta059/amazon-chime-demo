@@ -1,26 +1,26 @@
-const useMessaging = (meetingSession, DataMessage) => {
-    const sendMessage = () => {
+const useMessaging = (meetingSession, DataMessage, messages) => {
+    const sendMessage = (message) => {
         const dataMessageHandler = (dataMessage) => {
-            console.error(dataMessage);
+            messages.value.push({
+                message: new TextDecoder().decode(dataMessage.data),
+                senderAttendeeId: dataMessage.senderAttendeeId,
+            });
         };
 
         meetingSession.audioVideo.realtimeSubscribeToReceiveDataMessage(
-            "test",
+            "General",
             (dataMessage) => {
                 dataMessageHandler(dataMessage);
             }
         );
 
-        meetingSession.audioVideo.realtimeSendDataMessage(
-            "test",
-            "My name is Bob"
-        );
+        meetingSession.audioVideo.realtimeSendDataMessage("General", message);
 
         dataMessageHandler(
             new DataMessage(
                 Date.now(),
-                "test",
-                new TextEncoder().encode("My name is Bob"),
+                "General",
+                new TextEncoder().encode(message),
                 meetingSession.configuration.credentials.attendeeId,
                 meetingSession.configuration.credentials.externalUserId
             )
