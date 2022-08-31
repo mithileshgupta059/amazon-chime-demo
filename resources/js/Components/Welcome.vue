@@ -10,6 +10,8 @@ import {
 } from "amazon-chime-sdk-js";
 import { reactive, ref } from "vue";
 
+import placeholder from "@/img/placeholder.jpg";
+
 import useStartCall from "@/Hooks/useStartCall";
 import useToggleVideo from "@/Hooks/useToggleVideo";
 import useToggleAudio from "@/Hooks/useToggleAudio";
@@ -27,6 +29,14 @@ const isVideoStarted = ref(false);
 const isAudioStarted = ref(false);
 const isSettingsVisible = ref(false);
 const isContentSharing = ref(false);
+
+// Remote person state
+
+const remotePersonVideoAlive = ref(false);
+
+// Roster state
+
+const roster = ref({});
 
 // State of audio, video <Input, output>
 
@@ -105,7 +115,9 @@ const { startCall } = useStartCall(
     isAudioStarted,
     isVideoStarted,
     selectedAudioInputDevice,
-    selectedVideoInputDevice
+    selectedVideoInputDevice,
+    roster,
+    remotePersonVideoAlive
 );
 
 const { toggleVideo } = useToggleVideo(
@@ -116,7 +128,11 @@ const { toggleVideo } = useToggleVideo(
 );
 
 const { toggleAudio } = useToggleAudio(meetingSession, isAudioStarted);
-const { stopCall } = useStopCall(meetingSession, isCallStarted);
+const { stopCall } = useStopCall(
+    meetingSession,
+    isCallStarted,
+    remotePersonVideoAlive
+);
 const { changeDevices } = useChangeDevices(
     selectedAudioInputDevice,
     selectedVideoInputDevice,
@@ -136,6 +152,20 @@ const toggleSettings = () => {
     isSettingsVisible.value == true
         ? (isSettingsVisible.value = false)
         : (isSettingsVisible.value = true);
+};
+
+// Check if remote audio is muted
+
+const checkIfRemoteAudioMuted = () => {
+    let res = false;
+
+    Object.keys(roster.value).forEach((r) => {
+        if (roster.value[r].muted === true) {
+            res = true;
+        }
+    });
+
+    return res;
 };
 </script>
 
@@ -192,21 +222,19 @@ const toggleSettings = () => {
                     Save
                 </button>
             </div>
-            <div
-                v-if="!meetingSession.audioVideo.hasStartedLocalVideoTile()"
-                class="w-72 bg-gray-200 mb-2 rounded p-4"
-            >
-                <p>Local video stopped</p>
+            <div class="w-72 bg-gray-200 rounded">
+                <p v-if="meetingSession.audioVideo.realtimeIsLocalAudioMuted()">
+                    Audio muted
+                </p>
+                <video :poster="placeholder" ref="videoTag"></video>
             </div>
-            <div
-                class="h-96 w-72 bg-gray-200 flex justify-center items-center rounded"
-            >
-                <video ref="videoTag"></video>
-
-                <video ref="videoTagSecond"></video>
-
-                <audio ref="audioTag"></audio>
+            <div v-if="remotePersonVideoAlive" class="w-72 bg-gray-200 rounded">
+                <template v-if="roster !== {}">
+                    <p v-if="checkIfRemoteAudioMuted()">Audio muted</p>
+                </template>
+                <video :poster="placeholder" ref="videoTagSecond"></video>
             </div>
+            <audio ref="audioTag"></audio>
             <div
                 class="bg-gray-200 w-72 h-20 mt-4 rounded flex justify-evenly py-4"
             >
@@ -299,5 +327,6 @@ const toggleSettings = () => {
                 </div>
             </div>
         </div>
+        <pre>{{ JSON.stringify(roster, null, 2) }}</pre>
     </div>
 </template>
