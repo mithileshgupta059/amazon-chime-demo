@@ -68,8 +68,9 @@ const messages = ref([]);
 
 // Props and other jazz
 
-const { meeting_credentials } = defineProps({
+const { meeting_credentials, user } = defineProps({
     meeting_credentials: {},
+    user: {},
 });
 
 const logger = new ConsoleLogger("MeetingLogs", LogLevel.INFO);
@@ -103,6 +104,15 @@ meetingSession.audioVideo.listVideoInputDevices().then((res) => {
         fd.videoInputDevice = res[0];
     }
 });
+
+// Handle messaging
+
+const dataMessageHandler = (dataMessage) => {
+    messages.value.push({
+        message: JSON.parse(dataMessage.data).message,
+        senderName: JSON.parse(dataMessage.data).senderName,
+    });
+};
 
 // Hooks
 
@@ -144,7 +154,12 @@ const { startContentShare, stopContentShare } = useContentShare(
     isContentSharing,
     videoTagSecond
 );
-const { sendMessage } = useMessaging(meetingSession, DataMessage, messages);
+const { sendMessage } = useMessaging(
+    meetingSession,
+    DataMessage,
+    messages,
+    user
+);
 
 // Toggle settings
 
@@ -319,14 +334,13 @@ const checkIfRemoteAudioMuted = () => {
                 </button>
             </div>
             <div class="bg-gray-200 w-72 mt-4 rounded p-4">
-                <div v-for="message in messages">
-                    <p>{{ message.senderAttendeeId }}</p>
-                    <p>
-                        {{ message.message }}
-                    </p>
+                <div
+                    class="bg-blue-500 text-white px-4 py-2 rounded mb-2"
+                    v-for="message in messages"
+                >
+                    <p>{{ message.message }}</p>
                 </div>
             </div>
         </div>
-        <pre>{{ JSON.stringify(roster, null, 2) }}</pre>
     </div>
 </template>

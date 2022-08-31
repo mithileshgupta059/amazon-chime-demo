@@ -4,6 +4,7 @@ use Inertia\Inertia;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Auth;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,7 +61,8 @@ Route::middleware([
         return Inertia::render('Dashboard', [
             'meeting_credentials' => [
                 'meeting_response' => $meeting_response['Meeting'],
-                'attendee_response' => $attendee_response['Attendee']
+                'attendee_response' => $attendee_response['Attendee'],
+                'user' => Auth::user()
             ],
         ]);
     })->name('dashboard');

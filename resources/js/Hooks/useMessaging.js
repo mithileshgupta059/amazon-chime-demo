@@ -1,9 +1,8 @@
-const useMessaging = (meetingSession, DataMessage, messages) => {
+const useMessaging = (meetingSession, DataMessage, messages, user) => {
     const sendMessage = (message) => {
         const dataMessageHandler = (dataMessage) => {
             messages.value.push({
                 message: new TextDecoder().decode(dataMessage.data),
-                senderAttendeeId: dataMessage.senderAttendeeId,
             });
         };
 
