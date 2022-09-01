@@ -105,12 +105,13 @@ meetingSession.audioVideo.listVideoInputDevices().then((res) => {
     }
 });
 
-// Handle messaging
+// Data message handler
 
 const dataMessageHandler = (dataMessage) => {
     messages.value.push({
-        message: JSON.parse(dataMessage.data).message,
-        senderName: JSON.parse(dataMessage.data).senderName,
+        message: JSON.parse(new TextDecoder().decode(dataMessage.data)).message,
+        senderName: JSON.parse(new TextDecoder().decode(dataMessage.data))
+            .senderName,
     });
 };
 
@@ -127,7 +128,8 @@ const { startCall } = useStartCall(
     selectedAudioInputDevice,
     selectedVideoInputDevice,
     roster,
-    remotePersonVideoAlive
+    remotePersonVideoAlive,
+    dataMessageHandler
 );
 
 const { toggleVideo } = useToggleVideo(
@@ -157,8 +159,8 @@ const { startContentShare, stopContentShare } = useContentShare(
 const { sendMessage } = useMessaging(
     meetingSession,
     DataMessage,
-    messages,
-    user
+    user,
+    dataMessageHandler
 );
 
 // Toggle settings
@@ -338,6 +340,7 @@ const checkIfRemoteAudioMuted = () => {
                     class="bg-blue-500 text-white px-4 py-2 rounded mb-2"
                     v-for="message in messages"
                 >
+                    <p>{{ message.senderName }}</p>
                     <p>{{ message.message }}</p>
                 </div>
             </div>

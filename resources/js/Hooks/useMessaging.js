@@ -1,25 +1,27 @@
-const useMessaging = (meetingSession, DataMessage, messages, user) => {
+const useMessaging = (
+    meetingSession,
+    DataMessage,
+    user,
+    dataMessageHandler
+) => {
     const sendMessage = (message) => {
-        const dataMessageHandler = (dataMessage) => {
-            messages.value.push({
-                message: new TextDecoder().decode(dataMessage.data),
-            });
-        };
-
-        meetingSession.audioVideo.realtimeSubscribeToReceiveDataMessage(
-            "General",
-            (dataMessage) => {
-                dataMessageHandler(dataMessage);
-            }
+        const messageToSend = new TextEncoder().encode(
+            JSON.stringify({
+                senderName: user.name,
+                message,
+            })
         );
 
-        meetingSession.audioVideo.realtimeSendDataMessage("General", message);
+        meetingSession.audioVideo.realtimeSendDataMessage(
+            "General",
+            messageToSend
+        );
 
         dataMessageHandler(
             new DataMessage(
                 Date.now(),
                 "General",
-                new TextEncoder().encode(message),
+                messageToSend,
                 meetingSession.configuration.credentials.attendeeId,
                 meetingSession.configuration.credentials.externalUserId
             )

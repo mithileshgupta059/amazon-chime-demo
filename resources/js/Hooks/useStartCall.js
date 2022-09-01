@@ -11,7 +11,8 @@ const useStartCall = (
     selectedAudioInputDevice,
     selectedVideoInputDevice,
     roster,
-    remotePersonVideoAlive
+    remotePersonVideoAlive,
+    dataMessageHandler
 ) => {
     const startCall = async () => {
         roster.value = {};
@@ -118,6 +119,13 @@ const useStartCall = (
 
         await meetingSession.audioVideo.startVideoInput(
             selectedVideoInputDevice.value.deviceId
+        );
+
+        meetingSession.audioVideo.realtimeSubscribeToReceiveDataMessage(
+            "General",
+            (dataMessage) => {
+                dataMessageHandler(dataMessage);
+            }
         );
 
         isVideoStarted.value = true;
